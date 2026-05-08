@@ -1,0 +1,28 @@
+# --- GUI ---
+PySide6>=6.6
+
+# --- Audio analysis ---
+numpy>=1.24
+scipy>=1.11
+librosa>=0.10
+soundfile>=0.12
+mutagen>=1.47
+
+# --- Lyrics / Speech-to-text ---
+faster-whisper>=1.0
+# stable-ts works on top of whisper for word-level timing.
+# It is optional — the app falls back gracefully if it's not installed.
+# stable-ts>=2.17
+
+# --- Image / Video ---
+Pillow>=10.0
+opencv-python>=4.8
+imageio>=2.31
+imageio-ffmpeg>=0.4
+
+# --- Optional / utilities ---
+requests>=2.31
+tqdm>=4.66
+
+# --- Packaging (only needed when building binaries with build.py) ---
+# pyinstaller>=6.0
