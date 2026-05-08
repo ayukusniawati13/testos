@@ -113,36 +113,54 @@ spectrum_lyric_video_maker/
 ├── requirements.txt
 ├── README.md
 ├── build.py                    # PyInstaller build helper
-└── run.py                      # entry point: `python run.py`
+├── run.py                      # entry point: `python run.py`
+├── setup.bat / setup.sh        # one-shot venv + dependencies installer
+└── run.bat   / run.sh          # launches the app from the local .venv
 ```
 
 ---
 
 ## Quick start
 
-### 1. Install Python dependencies
+### Option A — one-click scripts (recommended)
+
+**Windows**
+
+```bat
+setup.bat   :: creates .venv and installs everything (run once)
+run.bat     :: launches the application
+```
+
+**Linux / macOS**
+
+```bash
+./setup.sh
+./run.sh
+```
+
+The setup script creates a local `.venv` next to the project, upgrades `pip`,
+installs every dependency from `requirements.txt`, and prints whether FFmpeg
+was found on `PATH`. The launch script just activates that `.venv` and calls
+`python run.py` for you.
+
+### Option B — manual
 
 ```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+python run.py
 ```
 
 > `faster-whisper` will pull `ctranslate2`. The first transcription downloads
 > a Whisper model (default: `base`) into `~/.cache`.
 
-### 2. Make sure FFmpeg is reachable
+### Make sure FFmpeg is reachable
 
 The application checks for FFmpeg on startup. If it isn't found, click
 **Install FFmpeg Online** in the FFmpeg dialog -- the app downloads a static
 build for your OS into `app/assets/ffmpeg/` and uses it from there.
 
 You can also rely on a system-wide install (`apt`, `brew`, `choco`, ...).
-
-### 3. Run
-
-```bash
-python run.py
-```
 
 ### 4. Build a desktop executable (optional)
 
