@@ -22,10 +22,14 @@ echo Starting Music Spectrum Lyrics Studio...
 echo.
 python main.py
 
+echo.
 if errorlevel 1 (
-    echo.
     echo [ERROR] Application exited with an error.
     echo Check the logs folder for details.
-    echo.
-    pause
+) else (
+    echo Application closed.
 )
+echo.
+echo Check logs\app.log and logs\crash.log for details if something went wrong.
+echo.
+pause

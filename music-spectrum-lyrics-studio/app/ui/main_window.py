@@ -3,6 +3,7 @@ Main application window - Music Spectrum Lyrics Studio.
 """
 import os
 import logging
+import traceback
 from PyQt6.QtWidgets import (
     QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QStatusBar, QMenuBar, QMenu, QFileDialog, QMessageBox,
@@ -230,30 +231,51 @@ class MainWindow(QMainWindow):
             logger.info(f"Audio selected: {path}")
             self.status_bar.showMessage(f"Loading: {os.path.basename(path)}")
 
-            from app.lyrics.metadata_lyrics_extractor import MetadataLyricsExtractor
-            extractor = MetadataLyricsExtractor(path)
-            self.lyrics_data = extractor.extract_metadata()
+            # Step 1: Extract metadata
+            logger.info("Step 1: Extracting metadata...")
+            try:
+                from app.lyrics.metadata_lyrics_extractor import MetadataLyricsExtractor
+                extractor = MetadataLyricsExtractor(path)
+                self.lyrics_data = extractor.extract_metadata()
+                logger.info(f"Metadata extracted: source={self.lyrics_data.source if self.lyrics_data else 'None'}")
+            except Exception as e:
+                logger.error(f"Metadata extraction failed: {traceback.format_exc()}")
+                self.lyrics_data = None
 
-            self.audio_panel.update_metadata(self.lyrics_data)
-            if self.lyrics_data:
-                self.lyrics_panel.update_source(self.lyrics_data.source)
-                if self.lyrics_data.raw_text:
-                    self.lyrics_panel.set_lyrics_text(self.lyrics_data.raw_text)
-                elif self.lyrics_data.lines:
-                    text = "\n".join(l.text for l in self.lyrics_data.lines)
-                    self.lyrics_panel.set_lyrics_text(text)
+            # Step 2: Update UI with metadata
+            logger.info("Step 2: Updating metadata UI...")
+            try:
+                self.audio_panel.update_metadata(self.lyrics_data)
+                if self.lyrics_data:
+                    self.lyrics_panel.update_source(self.lyrics_data.source)
+                    if self.lyrics_data.raw_text:
+                        self.lyrics_panel.set_lyrics_text(self.lyrics_data.raw_text)
+                    elif self.lyrics_data.lines:
+                        text = "\n".join(l.text for l in self.lyrics_data.lines)
+                        self.lyrics_panel.set_lyrics_text(text)
+            except Exception as e:
+                logger.error(f"Metadata UI update failed: {traceback.format_exc()}")
 
-            from app.audio.analyzer import AudioAnalysisThread
-            self._analysis_thread = AudioAnalysisThread(path, cache_dir=DIRS["cache"])
-            self._analysis_thread.progress.connect(
-                lambda p, m: self.status_bar.showMessage(f"Analysis: {m} ({p}%)")
-            )
-            self._analysis_thread.finished.connect(self._on_analysis_done)
-            self._analysis_thread.error.connect(
-                lambda e: self._show_error("Analysis Error", e)
-            )
-            self._analysis_thread.start()
+            # Step 3: Start audio analysis in background thread
+            logger.info("Step 3: Starting audio analysis thread...")
+            try:
+                from app.audio.analyzer import AudioAnalysisThread
+                self._analysis_thread = AudioAnalysisThread(path, cache_dir=DIRS["cache"])
+                self._analysis_thread.progress.connect(
+                    lambda p, m: self.status_bar.showMessage(f"Analysis: {m} ({p}%)")
+                )
+                self._analysis_thread.finished.connect(self._on_analysis_done)
+                self._analysis_thread.error.connect(
+                    lambda e: self._show_error("Analysis Error", e)
+                )
+                self._analysis_thread.start()
+                logger.info("Analysis thread started successfully")
+            except Exception as e:
+                logger.error(f"Analysis thread start failed: {traceback.format_exc()}")
+                self._show_error("Analysis Error", f"Failed to start analysis: {e}")
+
         except Exception as e:
+            logger.error(f"Audio load error: {traceback.format_exc()}")
             self._show_error("Audio Load Error", str(e))
 
     def _on_analysis_done(self, analyzer):

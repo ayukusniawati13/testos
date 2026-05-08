@@ -1,13 +1,20 @@
 """
 Audio analysis engine for spectrum visualization and beat detection.
 """
-import numpy as np
 import logging
 import os
 import json
+import traceback
 from PyQt6.QtCore import QThread, pyqtSignal
 
 logger = logging.getLogger(__name__)
+
+try:
+    import numpy as np
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
+    np = None
 
 
 class AudioAnalyzer:
@@ -26,52 +33,95 @@ class AudioAnalyzer:
         self.tempo = 0.0
 
     def load_audio(self):
-        """Load audio file using librosa."""
-        import librosa
+        """Load audio file using librosa or soundfile fallback."""
+        if not HAS_NUMPY:
+            raise ImportError("numpy is required for audio analysis. Run: pip install numpy")
+
         logger.info(f"Loading audio: {self.filepath}")
-        self.audio_data, self.sample_rate = librosa.load(
-            self.filepath, sr=self.sample_rate, mono=True
-        )
+
+        # Try librosa first, fall back to soundfile
+        try:
+            import librosa
+            self.audio_data, self.sample_rate = librosa.load(
+                self.filepath, sr=self.sample_rate, mono=True
+            )
+        except ImportError:
+            logger.warning("librosa not available, trying soundfile fallback")
+            try:
+                import soundfile as sf
+                data, sr = sf.read(self.filepath, dtype='float32')
+                if len(data.shape) > 1:
+                    data = data.mean(axis=1)
+                self.audio_data = data
+                self.sample_rate = sr
+            except ImportError:
+                raise ImportError(
+                    "Neither librosa nor soundfile available. "
+                    "Run: pip install librosa soundfile"
+                )
+
         self.duration = len(self.audio_data) / self.sample_rate
         logger.info(f"Audio loaded: duration={self.duration:.2f}s, sr={self.sample_rate}")
 
     def compute_spectrum(self):
         """Compute STFT spectrum data."""
-        import librosa
         if self.audio_data is None:
             self.load_audio()
 
-        stft = librosa.stft(
-            self.audio_data,
-            n_fft=self.fft_size,
-            hop_length=self.hop_length
-        )
-        self.spectrum_data = np.abs(stft)
-        magnitude_db = librosa.amplitude_to_db(self.spectrum_data, ref=np.max)
-        self.spectrum_db = magnitude_db
+        try:
+            import librosa
+            stft = librosa.stft(
+                self.audio_data,
+                n_fft=self.fft_size,
+                hop_length=self.hop_length
+            )
+            self.spectrum_data = np.abs(stft)
+            magnitude_db = librosa.amplitude_to_db(self.spectrum_data, ref=np.max)
+            self.spectrum_db = magnitude_db
+        except ImportError:
+            # numpy-only fallback using manual FFT
+            n_frames = 1 + (len(self.audio_data) - self.fft_size) // self.hop_length
+            self.spectrum_data = np.zeros((self.fft_size // 2 + 1, max(n_frames, 1)))
+            for i in range(n_frames):
+                start = i * self.hop_length
+                frame = self.audio_data[start:start + self.fft_size]
+                if len(frame) < self.fft_size:
+                    frame = np.pad(frame, (0, self.fft_size - len(frame)))
+                windowed = frame * np.hanning(self.fft_size)
+                fft_result = np.fft.rfft(windowed)
+                self.spectrum_data[:, i] = np.abs(fft_result)
+            self.spectrum_db = self.spectrum_data
+
         logger.info(f"Spectrum computed: shape={self.spectrum_data.shape}")
         return self.spectrum_data
 
     def detect_beats(self):
         """Detect beats in the audio."""
-        import librosa
         if self.audio_data is None:
             self.load_audio()
 
-        self.tempo, self.beat_frames = librosa.beat.beat_track(
-            y=self.audio_data, sr=self.sample_rate, hop_length=self.hop_length
-        )
-        self.beat_times = librosa.frames_to_time(
-            self.beat_frames, sr=self.sample_rate, hop_length=self.hop_length
-        )
-        if isinstance(self.tempo, np.ndarray):
-            self.tempo = float(self.tempo[0])
+        try:
+            import librosa
+            self.tempo, self.beat_frames = librosa.beat.beat_track(
+                y=self.audio_data, sr=self.sample_rate, hop_length=self.hop_length
+            )
+            self.beat_times = librosa.frames_to_time(
+                self.beat_frames, sr=self.sample_rate, hop_length=self.hop_length
+            )
+            if isinstance(self.tempo, np.ndarray):
+                self.tempo = float(self.tempo[0])
+        except ImportError:
+            # Simple beat detection fallback
+            self.tempo = 120.0
+            beat_interval = 60.0 / self.tempo
+            self.beat_times = np.arange(0, self.duration, beat_interval)
+            self.beat_frames = (self.beat_times * self.sample_rate / self.hop_length).astype(int)
+
         logger.info(f"Beat detection: tempo={self.tempo:.1f} BPM, beats={len(self.beat_times)}")
         return self.beat_times
 
     def get_spectrum_at_time(self, time_sec, bar_count=64, bass_boost=1.0, treble_reaction=1.0, sensitivity=1.0):
         """Get spectrum bars at a specific time."""
-        import librosa
         if self.spectrum_data is None:
             self.compute_spectrum()
 
@@ -214,5 +264,6 @@ class AudioAnalysisThread(QThread):
             self.progress.emit(100, "Analysis complete")
             self.finished.emit(analyzer)
         except Exception as e:
-            logger.error(f"Audio analysis error: {e}")
-            self.error.emit(str(e))
+            tb = traceback.format_exc()
+            logger.error(f"Audio analysis error: {tb}")
+            self.error.emit(f"{e}\n\nDetails:\n{tb}")

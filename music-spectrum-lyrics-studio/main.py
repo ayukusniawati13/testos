@@ -12,6 +12,7 @@ import sys
 import os
 import logging
 import traceback
+import faulthandler
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -40,14 +41,49 @@ def _global_exception_handler(exc_type, exc_value, exc_tb):
         pass
 
 
+def _check_dependencies(logger):
+    """Pre-check critical dependencies and log status."""
+    deps = {
+        "numpy": False,
+        "librosa": False,
+        "soundfile": False,
+        "mutagen": False,
+        "PIL": False,
+    }
+    for name in deps:
+        try:
+            __import__(name)
+            deps[name] = True
+        except ImportError:
+            pass
+    for name, ok in deps.items():
+        if ok:
+            logger.info(f"  {name}: OK")
+        else:
+            logger.warning(f"  {name}: NOT INSTALLED")
+    return deps
+
+
 def main():
     ensure_dirs()
     setup_logging(DIRS["logs"])
+
+    # Enable faulthandler to get tracebacks on C-level crashes
+    crash_log = os.path.join(DIRS["logs"], "crash.log")
+    try:
+        crash_fh = open(crash_log, "w")
+        faulthandler.enable(file=crash_fh)
+    except Exception:
+        faulthandler.enable()
 
     sys.excepthook = _global_exception_handler
 
     logger = logging.getLogger(__name__)
     logger.info(f"Starting {APP_NAME} v{APP_VERSION}")
+    logger.info(f"Python {sys.version}")
+    logger.info(f"Platform: {sys.platform}")
+    logger.info("Checking dependencies...")
+    _check_dependencies(logger)
 
     # Check FFmpeg
     ffmpeg_ok, ffmpeg_info = check_ffmpeg()

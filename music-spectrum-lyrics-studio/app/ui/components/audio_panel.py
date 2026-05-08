@@ -2,13 +2,17 @@
 Audio input panel - select music file and view metadata.
 """
 import os
+import logging
+import traceback
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QFileDialog, QGroupBox, QGridLayout, QFrame
+    QFileDialog, QGroupBox, QGridLayout, QFrame, QMessageBox
 )
 from PyQt6.QtCore import pyqtSignal, Qt
 from PyQt6.QtGui import QPixmap
 from app.core.config import AUDIO_FILTER, SUPPORTED_AUDIO
+
+logger = logging.getLogger(__name__)
 
 
 class AudioPanel(QWidget):
@@ -71,33 +75,44 @@ class AudioPanel(QWidget):
         layout.addStretch()
 
     def _select_file(self):
-        path, _ = QFileDialog.getOpenFileName(
-            self, "Select Music File", "", AUDIO_FILTER
-        )
-        if path:
-            self.audio_path = path
-            self.lbl_file.setText(os.path.basename(path))
-            self.audio_selected.emit(path)
+        try:
+            path, _ = QFileDialog.getOpenFileName(
+                self, "Select Music File", "", AUDIO_FILTER
+            )
+            if path:
+                self.audio_path = path
+                self.lbl_file.setText(os.path.basename(path))
+                logger.info(f"File selected: {path}")
+                self.audio_selected.emit(path)
+        except Exception as e:
+            logger.error(f"File selection error: {traceback.format_exc()}")
+            QMessageBox.critical(self, "Error", f"Failed to select file: {e}")
 
     def update_metadata(self, lyrics_data):
         """Update metadata display from LyricsData."""
-        if not lyrics_data:
-            return
-        self.meta_labels["title"].setText(lyrics_data.title or "-")
-        self.meta_labels["artist"].setText(lyrics_data.artist or "-")
-        self.meta_labels["album"].setText(lyrics_data.album or "-")
-        self.meta_labels["year"].setText(lyrics_data.year or "-")
-        self.meta_labels["genre"].setText(lyrics_data.genre or "-")
-        self.meta_labels["lyrics"].setText(lyrics_data.source or "-")
+        try:
+            if not lyrics_data:
+                return
+            self.meta_labels["title"].setText(lyrics_data.title or "-")
+            self.meta_labels["artist"].setText(lyrics_data.artist or "-")
+            self.meta_labels["album"].setText(lyrics_data.album or "-")
+            self.meta_labels["year"].setText(lyrics_data.year or "-")
+            self.meta_labels["genre"].setText(lyrics_data.genre or "-")
+            self.meta_labels["lyrics"].setText(lyrics_data.source or "-")
 
-        if lyrics_data.cover_data:
-            pixmap = QPixmap()
-            pixmap.loadFromData(lyrics_data.cover_data)
-            if not pixmap.isNull():
-                self.cover_label.setPixmap(
-                    pixmap.scaled(150, 150, Qt.AspectRatioMode.KeepAspectRatio,
-                                  Qt.TransformationMode.SmoothTransformation)
-                )
+            if lyrics_data.cover_data:
+                try:
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(lyrics_data.cover_data)
+                    if not pixmap.isNull():
+                        self.cover_label.setPixmap(
+                            pixmap.scaled(150, 150, Qt.AspectRatioMode.KeepAspectRatio,
+                                          Qt.TransformationMode.SmoothTransformation)
+                        )
+                except Exception as e:
+                    logger.warning(f"Cover art load error: {e}")
+        except Exception as e:
+            logger.error(f"Metadata update error: {traceback.format_exc()}")
 
     def update_duration(self, duration):
         from app.utils.helpers import format_time
