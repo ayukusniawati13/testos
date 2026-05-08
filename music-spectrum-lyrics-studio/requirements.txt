@@ -1,0 +1,24 @@
+# Music Spectrum Lyrics Studio - Dependencies
+# Core GUI
+PyQt6>=6.5.0
+
+# Audio Processing
+librosa>=0.10.0
+soundfile>=0.12.0
+numpy>=1.24.0
+
+# Image Processing
+Pillow>=10.0.0
+
+# Audio Metadata
+mutagen>=1.47.0
+tinytag>=1.9.0
+
+# Whisper Speech Recognition (optional - for AI lyrics)
+# Uncomment based on your needs:
+# openai-whisper>=20231117
+# faster-whisper>=0.10.0
+# whisperx>=3.1.1
+
+# Utilities
+tqdm>=4.65.0
