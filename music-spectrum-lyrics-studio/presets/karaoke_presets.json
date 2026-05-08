@@ -1,0 +1,122 @@
+{
+  "EDM Neon Karaoke": {
+    "mode": "Karaoke Neon Glow Mode",
+    "font_size": 48,
+    "normal_color": "#444488",
+    "highlight_color": "#00ffff",
+    "outline_color": "#000033",
+    "outline_thickness": 3,
+    "glow_effect": true,
+    "glow_intensity": 1.2,
+    "transition_speed": 0.15,
+    "line_spacing": 1.5
+  },
+  "TikTok Modern Lyrics": {
+    "mode": "Karaoke Word Highlight",
+    "font_size": 42,
+    "normal_color": "#888888",
+    "highlight_color": "#ffffff",
+    "outline_color": "#000000",
+    "outline_thickness": 2,
+    "glow_effect": false,
+    "glow_intensity": 0.0,
+    "transition_speed": 0.2,
+    "line_spacing": 1.4
+  },
+  "Anime Karaoke": {
+    "mode": "Karaoke Smooth Sweep",
+    "font_size": 40,
+    "normal_color": "#ffccdd",
+    "highlight_color": "#ff6699",
+    "outline_color": "#660033",
+    "outline_thickness": 2,
+    "glow_effect": true,
+    "glow_intensity": 0.6,
+    "transition_speed": 0.25,
+    "line_spacing": 1.5
+  },
+  "Cyberpunk Glow": {
+    "mode": "Karaoke Neon Glow Mode",
+    "font_size": 44,
+    "normal_color": "#333366",
+    "highlight_color": "#ff00ff",
+    "outline_color": "#110022",
+    "outline_thickness": 3,
+    "glow_effect": true,
+    "glow_intensity": 1.5,
+    "transition_speed": 0.15,
+    "line_spacing": 1.4
+  },
+  "LoFi Chill Lyrics": {
+    "mode": "Karaoke Floating Lyrics",
+    "font_size": 36,
+    "normal_color": "#997755",
+    "highlight_color": "#ffddaa",
+    "outline_color": "#332211",
+    "outline_thickness": 1,
+    "glow_effect": false,
+    "glow_intensity": 0.0,
+    "transition_speed": 0.4,
+    "line_spacing": 1.6
+  },
+  "Minimal Subtitle": {
+    "mode": "Karaoke Subtitle Professional",
+    "font_size": 38,
+    "normal_color": "#ffffff",
+    "highlight_color": "#ffffff",
+    "outline_color": "#000000",
+    "outline_thickness": 2,
+    "glow_effect": false,
+    "glow_intensity": 0.0,
+    "transition_speed": 0.1,
+    "line_spacing": 1.3
+  },
+  "Concert Style": {
+    "mode": "Karaoke Line Highlight",
+    "font_size": 52,
+    "normal_color": "#666666",
+    "highlight_color": "#ffcc00",
+    "outline_color": "#000000",
+    "outline_thickness": 3,
+    "glow_effect": true,
+    "glow_intensity": 0.8,
+    "transition_speed": 0.2,
+    "line_spacing": 1.5
+  },
+  "Night Drive Neon": {
+    "mode": "Karaoke Gradient Flow",
+    "font_size": 40,
+    "normal_color": "#334455",
+    "highlight_color": "#00ddff",
+    "outline_color": "#001122",
+    "outline_thickness": 2,
+    "glow_effect": true,
+    "glow_intensity": 1.0,
+    "transition_speed": 0.3,
+    "line_spacing": 1.4
+  },
+  "Cinematic Clean": {
+    "mode": "Karaoke Cinematic Mode",
+    "font_size": 46,
+    "normal_color": "#aaaaaa",
+    "highlight_color": "#ffffff",
+    "outline_color": "#222222",
+    "outline_thickness": 1,
+    "glow_effect": false,
+    "glow_intensity": 0.0,
+    "transition_speed": 0.35,
+    "line_spacing": 1.6
+  },
+  "Bass Reactive Lyrics": {
+    "mode": "Karaoke Beat Reactive",
+    "font_size": 44,
+    "normal_color": "#555555",
+    "highlight_color": "#ff3333",
+    "outline_color": "#110000",
+    "outline_thickness": 2,
+    "glow_effect": true,
+    "glow_intensity": 0.9,
+    "transition_speed": 0.1,
+    "line_spacing": 1.4
+  }
+}

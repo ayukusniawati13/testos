@@ -1,0 +1,8 @@
+{
+  "quality_mode": "Balanced",
+  "autosave": true,
+  "theme": "dark",
+  "default_spectrum_style": "Bar Spectrum",
+  "default_karaoke_mode": "Karaoke Word Highlight",
+  "default_whisper_model": "Auto Best Model"
+}
