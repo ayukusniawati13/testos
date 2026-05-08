@@ -349,5 +349,9 @@ def load_settings():
 
 def save_settings(settings):
     ensure_dirs()
-    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
-        json.dump(settings, f, indent=2, ensure_ascii=False)
+    try:
+        with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+            json.dump(settings, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to save settings: {e}")

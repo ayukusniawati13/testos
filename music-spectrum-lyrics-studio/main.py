@@ -11,6 +11,7 @@ Usage:
 import sys
 import os
 import logging
+import traceback
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -19,9 +20,31 @@ from app.core.config import APP_NAME, APP_VERSION, DIRS, ensure_dirs
 from app.utils.helpers import setup_logging, check_ffmpeg
 
 
+def _global_exception_handler(exc_type, exc_value, exc_tb):
+    """Catch unhandled exceptions so the app doesn't close silently."""
+    logger = logging.getLogger(__name__)
+    tb_text = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+    logger.error(f"Unhandled exception:\n{tb_text}")
+
+    try:
+        from PyQt6.QtWidgets import QMessageBox, QApplication
+        app = QApplication.instance()
+        if app:
+            msg = QMessageBox()
+            msg.setWindowTitle("Error")
+            msg.setIcon(QMessageBox.Icon.Critical)
+            msg.setText("An unexpected error occurred.")
+            msg.setDetailedText(tb_text)
+            msg.exec()
+    except Exception:
+        pass
+
+
 def main():
     ensure_dirs()
     setup_logging(DIRS["logs"])
+
+    sys.excepthook = _global_exception_handler
 
     logger = logging.getLogger(__name__)
     logger.info(f"Starting {APP_NAME} v{APP_VERSION}")
@@ -54,4 +77,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        traceback.print_exc()
+        input("Press Enter to exit...")

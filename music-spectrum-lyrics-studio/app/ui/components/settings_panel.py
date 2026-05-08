@@ -90,9 +90,12 @@ class SettingsPanel(QWidget):
         layout.addStretch()
 
     def _load_current(self):
-        settings = load_settings()
-        self.combo_quality.setCurrentText(settings.get("quality_mode", "Balanced"))
-        self.chk_autosave.setChecked(settings.get("autosave", True))
+        try:
+            settings = load_settings()
+            self.combo_quality.setCurrentText(settings.get("quality_mode", "Balanced"))
+            self.chk_autosave.setChecked(settings.get("autosave", True))
+        except Exception:
+            pass
 
     def _change_output(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Output Folder")
@@ -100,22 +103,32 @@ class SettingsPanel(QWidget):
             self.lbl_output.setText(folder)
 
     def _clean_temp(self):
-        from app.utils.helpers import clean_temp_files
-        clean_temp_files(DIRS["temp"])
-        self.lbl_temp_info.setText("Temp files cleaned")
+        try:
+            from app.utils.helpers import clean_temp_files
+            clean_temp_files(DIRS["temp"])
+            self.lbl_temp_info.setText("Temp files cleaned")
+        except Exception as e:
+            self.lbl_temp_info.setText(f"Error: {e}")
 
     def _clean_cache(self):
-        from app.utils.helpers import clean_temp_files
-        clean_temp_files(DIRS["cache"])
-        self.lbl_temp_info.setText("Cache files cleaned")
+        try:
+            from app.utils.helpers import clean_temp_files
+            clean_temp_files(DIRS["cache"])
+            self.lbl_temp_info.setText("Cache files cleaned")
+        except Exception as e:
+            self.lbl_temp_info.setText(f"Error: {e}")
 
     def _save(self):
-        settings = load_settings()
-        settings["quality_mode"] = self.combo_quality.currentText()
-        settings["autosave"] = self.chk_autosave.isChecked()
-        settings["output_dir"] = self.lbl_output.text()
-        save_settings(settings)
-        self.settings_saved.emit()
+        try:
+            settings = load_settings()
+            settings["quality_mode"] = self.combo_quality.currentText()
+            settings["autosave"] = self.chk_autosave.isChecked()
+            settings["output_dir"] = self.lbl_output.text()
+            save_settings(settings)
+            self.settings_saved.emit()
+        except Exception as e:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Save Error", str(e))
 
     def get_settings(self):
         return {
