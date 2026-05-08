@@ -153,11 +153,50 @@ def get_audio_duration(filepath):
 
 def get_system_info():
     """Get system information for performance profiling."""
-    import psutil
+    cpu_count = os.cpu_count() or 1
+    ram_gb = 4.0
+    try:
+        import psutil
+        cpu_count = psutil.cpu_count() or cpu_count
+        ram_gb = round(psutil.virtual_memory().total / (1024 ** 3), 1)
+    except ImportError:
+        if platform.system() == "Windows":
+            try:
+                import ctypes
+                kernel32 = ctypes.windll.kernel32
+                c_ulonglong = ctypes.c_ulonglong
+                class MEMORYSTATUSEX(ctypes.Structure):
+                    _fields_ = [
+                        ("dwLength", ctypes.c_ulong),
+                        ("dwMemoryLoad", ctypes.c_ulong),
+                        ("ullTotalPhys", c_ulonglong),
+                        ("ullAvailPhys", c_ulonglong),
+                        ("ullTotalPageFile", c_ulonglong),
+                        ("ullAvailPageFile", c_ulonglong),
+                        ("ullTotalVirtual", c_ulonglong),
+                        ("ullAvailVirtual", c_ulonglong),
+                        ("ullAvailExtendedVirtual", c_ulonglong),
+                    ]
+                stat = MEMORYSTATUSEX()
+                stat.dwLength = ctypes.sizeof(stat)
+                kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))
+                ram_gb = round(stat.ullTotalPhys / (1024 ** 3), 1)
+            except Exception:
+                pass
+        else:
+            try:
+                with open("/proc/meminfo") as f:
+                    for line in f:
+                        if line.startswith("MemTotal"):
+                            ram_gb = round(int(line.split()[1]) / (1024 ** 2), 1)
+                            break
+            except Exception:
+                pass
+
     info = {
         "platform": platform.system(),
-        "cpu_count": psutil.cpu_count(),
-        "ram_gb": round(psutil.virtual_memory().total / (1024 ** 3), 1),
+        "cpu_count": cpu_count,
+        "ram_gb": ram_gb,
         "gpu_available": check_gpu_available(),
     }
     if info["ram_gb"] < 4:

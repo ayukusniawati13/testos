@@ -15,13 +15,13 @@ import logging
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app.core.config import APP_NAME, APP_VERSION, ensure_dirs
+from app.core.config import APP_NAME, APP_VERSION, DIRS, ensure_dirs
 from app.utils.helpers import setup_logging, check_ffmpeg
 
 
 def main():
     ensure_dirs()
-    setup_logging()
+    setup_logging(DIRS["logs"])
 
     logger = logging.getLogger(__name__)
     logger.info(f"Starting {APP_NAME} v{APP_VERSION}")
