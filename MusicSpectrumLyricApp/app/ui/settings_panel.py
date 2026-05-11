@@ -4,10 +4,10 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel,
     QComboBox, QSpinBox, QDoubleSpinBox, QCheckBox, QLineEdit,
     QPushButton, QSlider, QColorDialog, QFileDialog, QScrollArea,
-    QFormLayout, QFrame,
+    QFormLayout, QFrame, QCompleter,
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QFontDatabase
 
 from app.core.spectrum_engine import SpectrumStyle, SpectrumConfig
 from app.core.lyric_renderer import LyricConfig
@@ -166,11 +166,29 @@ class SettingsPanel(QWidget):
 
         self.font_family = QComboBox()
         self.font_family.setEditable(True)
-        self.font_family.addItems([
-            "Arial", "Segoe UI", "Helvetica", "Verdana", "Tahoma",
-            "Georgia", "Times New Roman", "Impact",
-            "DejaVu Sans", "Liberation Sans",
-        ])
+        self.font_family.setMaxVisibleItems(20)
+        system_fonts = sorted(set(QFontDatabase.families()))
+        popular = [
+            "Arial", "Segoe UI", "Helvetica Neue", "Helvetica",
+            "Verdana", "Tahoma", "Georgia", "Times New Roman",
+            "Impact", "Trebuchet MS", "Palatino Linotype",
+            "Lucida Console", "Courier New", "Comic Sans MS",
+            "Candara", "Calibri", "Cambria", "Consolas",
+            "Century Gothic", "Franklin Gothic Medium",
+            "Montserrat", "Roboto", "Open Sans", "Lato",
+            "Poppins", "Raleway", "Oswald", "Nunito",
+            "Ubuntu", "Noto Sans", "Source Sans Pro",
+            "DejaVu Sans", "Liberation Sans", "Liberation Serif",
+            "Fira Sans", "Inter", "Playfair Display",
+        ]
+        available_popular = [f for f in popular if f in system_fonts]
+        other_fonts = [f for f in system_fonts if f not in popular]
+        all_fonts = available_popular + ["---"] + other_fonts
+        self.font_family.addItems(all_fonts)
+        completer = QCompleter(system_fonts)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        self.font_family.setCompleter(completer)
         form.addRow("Font:", self.font_family)
 
         self.font_size = QSpinBox()

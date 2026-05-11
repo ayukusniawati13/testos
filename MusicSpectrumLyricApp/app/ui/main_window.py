@@ -289,6 +289,14 @@ class MainWindow(QMainWindow):
         lyric_cfg = self.settings_panel.get_lyric_config()
         self.preview_panel.set_config(spec_cfg, lyric_cfg)
 
+        music = self.music_path.text()
+        if music and os.path.isfile(music):
+            self.preview_panel.load_audio(music)
+
+        bg = self.bg_path.text()
+        if bg and os.path.isfile(bg):
+            self.preview_panel.load_background(bg)
+
         lrc = self.lrc_path.text()
         if lrc and os.path.isfile(lrc):
             lyrics = LRCParser.parse(lrc)
