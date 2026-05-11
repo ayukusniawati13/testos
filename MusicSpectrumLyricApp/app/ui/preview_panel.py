@@ -4,15 +4,41 @@ import os
 import numpy as np
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QSlider,
+    QSizePolicy, QFrame,
 )
 from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtGui import QImage, QPixmap, QPainter
 
 from app.core.spectrum_engine import SpectrumEngine, SpectrumConfig
 from app.core.lyric_renderer import LyricRenderer, LyricConfig
 from app.core.lrc_parser import LyricLine
 from app.core.audio_analyzer import AudioAnalyzer
 from PIL import Image
+
+
+class AspectRatioLabel(QLabel):
+    """QLabel that maintains 16:9 aspect ratio and fills available width."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        sp = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sp.setHeightForWidth(True)
+        self.setSizePolicy(sp)
+        self._ratio = 9.0 / 16.0
+
+    def hasHeightForWidth(self) -> bool:
+        return True
+
+    def heightForWidth(self, w: int) -> int:
+        return int(w * self._ratio)
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        w = self.width()
+        h = int(w * self._ratio)
+        if h != self.height():
+            self.setFixedHeight(h)
 
 
 class PreviewPanel(QWidget):
@@ -28,21 +54,22 @@ class PreviewPanel(QWidget):
         self._spectrum_engine: SpectrumEngine | None = None
         self._lyric_renderer: LyricRenderer | None = None
         self._audio_analyzer: AudioAnalyzer | None = None
-        self._background: Image.Image | None = None
+        self._background_orig: Image.Image | None = None
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
-        self._width = 640
-        self._height = 360
         self._seeking = False
+
+    def _get_render_size(self) -> tuple[int, int]:
+        w = max(320, self.image_label.width())
+        h = max(180, int(w * 9.0 / 16.0))
+        return w, h
 
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(6)
+        layout.setSpacing(4)
 
-        self.image_label = QLabel()
-        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_label.setMinimumSize(480, 270)
+        self.image_label = AspectRatioLabel()
         self.image_label.setStyleSheet(
             "background-color: #0d0d1a; border: 1px solid #2d2d4a; border-radius: 6px;"
         )
@@ -51,19 +78,20 @@ class PreviewPanel(QWidget):
         self.timeline = QSlider(Qt.Orientation.Horizontal)
         self.timeline.setRange(0, 10000)
         self.timeline.setValue(0)
+        self.timeline.setFixedHeight(20)
         self.timeline.setStyleSheet("""
             QSlider::groove:horizontal {
-                height: 8px; background: #1a1a2e;
-                border: 1px solid #2d2d4a; border-radius: 4px;
+                height: 6px; background: #1a1a2e;
+                border: 1px solid #2d2d4a; border-radius: 3px;
             }
             QSlider::handle:horizontal {
-                background: #00d4ff; width: 14px; height: 14px;
-                margin: -4px 0; border-radius: 7px;
+                background: #00d4ff; width: 12px; height: 12px;
+                margin: -4px 0; border-radius: 6px;
             }
             QSlider::sub-page:horizontal {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                     stop:0 #00d4ff, stop:1 #e040fb);
-                border-radius: 4px;
+                border-radius: 3px;
             }
         """)
         self.timeline.sliderPressed.connect(self._on_seek_start)
@@ -72,24 +100,27 @@ class PreviewPanel(QWidget):
         layout.addWidget(self.timeline)
 
         controls = QHBoxLayout()
-        controls.setSpacing(8)
+        controls.setSpacing(6)
+        controls.setContentsMargins(0, 0, 0, 0)
 
         self.play_btn = QPushButton("Play")
-        self.play_btn.setFixedWidth(80)
+        self.play_btn.setFixedSize(70, 28)
         self.play_btn.clicked.connect(self._toggle_play)
 
         self.stop_btn = QPushButton("Stop")
-        self.stop_btn.setFixedWidth(60)
+        self.stop_btn.setFixedSize(55, 28)
         self.stop_btn.clicked.connect(self._stop)
 
         self.time_label = QLabel("0:00.0 / 0:00.0")
-        self.time_label.setStyleSheet("color: #8888aa; font-family: monospace; font-size: 13px;")
+        self.time_label.setStyleSheet("color: #8888aa; font-family: monospace; font-size: 12px;")
+        self.time_label.setFixedHeight(28)
 
         self.lyric_label = QLabel("")
         self.lyric_label.setStyleSheet(
-            "color: #00d4ff; font-size: 12px; font-style: italic;"
+            "color: #00d4ff; font-size: 11px; font-style: italic;"
         )
-        self.lyric_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.lyric_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.lyric_label.setFixedHeight(28)
 
         controls.addWidget(self.play_btn)
         controls.addWidget(self.stop_btn)
@@ -101,6 +132,7 @@ class PreviewPanel(QWidget):
         self.info_label = QLabel("Load music and lyrics, then click Update Preview")
         self.info_label.setStyleSheet("color: #555570; font-size: 11px;")
         self.info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.info_label.setFixedHeight(18)
         layout.addWidget(self.info_label)
 
     def set_config(self, spectrum_config: SpectrumConfig,
@@ -135,17 +167,20 @@ class PreviewPanel(QWidget):
 
     def load_background(self, filepath: str) -> None:
         if not filepath or not os.path.isfile(filepath):
-            self._background = None
+            self._background_orig = None
             return
         try:
             ext = filepath.lower().rsplit(".", 1)[-1]
             if ext in ("jpg", "jpeg", "png", "webp", "bmp"):
-                img = Image.open(filepath).convert("RGBA")
-                img = img.resize((self._width, self._height), Image.LANCZOS)
-                self._background = img
+                self._background_orig = Image.open(filepath).convert("RGBA")
                 self.info_label.setText("Background loaded")
         except Exception:
-            self._background = None
+            self._background_orig = None
+
+    def _get_background(self, w: int, h: int) -> Image.Image | None:
+        if self._background_orig is None:
+            return None
+        return self._background_orig.resize((w, h), Image.LANCZOS)
 
     def _on_seek_start(self) -> None:
         self._seeking = True
@@ -191,10 +226,11 @@ class PreviewPanel(QWidget):
         self._render_frame()
 
     def _render_frame(self) -> None:
-        w, h = self._width, self._height
+        w, h = self._get_render_size()
 
-        if self._background:
-            frame = self._background.copy()
+        bg = self._get_background(w, h)
+        if bg:
+            frame = bg
         else:
             frame = Image.new("RGBA", (w, h), (13, 13, 26, 255))
 
@@ -219,13 +255,7 @@ class PreviewPanel(QWidget):
         rgb = frame.convert("RGB")
         data = rgb.tobytes()
         qimg = QImage(data, w, h, w * 3, QImage.Format.Format_RGB888)
-        pixmap = QPixmap.fromImage(qimg)
-        scaled = pixmap.scaled(
-            self.image_label.size(),
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
-        )
-        self.image_label.setPixmap(scaled)
+        self.image_label.setPixmap(QPixmap.fromImage(qimg))
         self._update_time_display()
         self._update_lyric_display()
 
