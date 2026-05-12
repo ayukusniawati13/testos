@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.env
+.idea/
+.vscode/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# App data
+config.json
+api_keys.json
+output/
+tmp/
+*.mp4
+*.mov
+*.mkv
+!docs/**/*.mp4

@@ -1,0 +1,48 @@
+[project]
+name = "music-spectrum-studio"
+version = "0.1.0"
+description = "Professional desktop app to turn music files into spectrum + lyric music videos."
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Music Spectrum Studio" }]
+dependencies = [
+    "PySide6>=6.6.0",
+    "numpy>=1.24.0",
+    "Pillow>=10.0.0",
+    "opencv-python-headless>=4.8.0",
+    "soundfile>=0.12.1",
+    "librosa>=0.10.1",
+    "requests>=2.31.0",
+    "imageio-ffmpeg>=0.4.9",
+    "mutagen>=1.47.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "ruff>=0.5.0",
+]
+
+[project.scripts]
+music-spectrum-studio = "app.main:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501", "B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
